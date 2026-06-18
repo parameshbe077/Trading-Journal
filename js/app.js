@@ -1,6 +1,6 @@
 import { loadState, saveState, exportData, importData, clearState, setStorageUser, clearStorageUser, setSaveErrorHandler } from './storage.js';
 import { renderNav, renderPage, initChartsForPage, tradeFormHtml, parseTradeForm, NAV_ITEMS } from './views.js';
-import { uid, todayISO, defaultState } from './utils.js';
+import { uid, todayISO, defaultState, initDateInputs } from './utils.js';
 import { setPalette } from './theme.js';
 import { watchAuth, signOutUser, authScreenHtml, bindAuthScreen } from './auth.js';
 
@@ -247,6 +247,7 @@ class App {
     });
     content.querySelector('#import-settings')?.addEventListener('change', e => this.handleImport(e.target));
     content.querySelector('#btn-clear-data')?.addEventListener('click', () => this.clearData());
+    initDateInputs(content);
   }
 
   updateRulesScore() {
@@ -268,6 +269,7 @@ class App {
     this.els.modalBackdrop.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
     requestAnimationFrame(() => {
+      initDateInputs(this.els.modalBody);
       const firstInput = this.els.modalBody.querySelector('input, select, textarea');
       firstInput?.focus();
     });

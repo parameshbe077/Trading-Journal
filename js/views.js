@@ -1,6 +1,7 @@
 import {
   formatCurrency, formatDate, formatTime, formatPct, escapeHtml,
   calcTradePnl, calcRMultiple, todayISO, MOODS, SETUPS, MARKETS, uid, parseNum,
+  dateInputHtml,
 } from './utils.js';
 import {
   getStats, getDailyStats, getDailyPnl, getCumulativePnl, getSetupStats,
@@ -237,8 +238,8 @@ function renderTrades(state, filters = {}) {
 
   return `
     <div class="filters card" style="padding:14px">
-      <input type="date" id="filter-from" value="${filters.from || ''}" placeholder="From" />
-      <input type="date" id="filter-to" value="${filters.to || ''}" placeholder="To" />
+      ${dateInputHtml('filter-from', filters.from || '')}
+      ${dateInputHtml('filter-to', filters.to || '')}
       <input type="text" id="filter-symbol" value="${escapeHtml(filters.symbol || '')}" placeholder="Eg: Nifty" />
       <select id="filter-setup">
         <option value="">All setups</option>
@@ -285,7 +286,7 @@ function renderJournal(state, selectedDate) {
     <div class="form-row cols-2 mb-16">
       <div class="form-group">
         <label for="journal-date">Date</label>
-        <input type="date" id="journal-date" value="${date}" max="${todayISO()}" />
+        ${dateInputHtml('journal-date', date, `max="${todayISO()}"`)}
       </div>
       <div class="form-group">
         <label>Day P&L</label>
@@ -369,7 +370,7 @@ function renderCalendar(state, year, month) {
   const monthPnl = getMonthlyPnlFromDaily(daily, y, m);
 
   return `
-    <div class="card">
+    <div class="card calendar-card">
       <div class="calendar-header">
         <button type="button" class="btn-icon" id="cal-prev" aria-label="Previous month">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
@@ -383,7 +384,7 @@ function renderCalendar(state, year, month) {
         </button>
       </div>
       <div class="calendar-grid">
-        ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => `<div class="cal-day-name">${d}</div>`).join('')}
+        ${['S','M','T','W','T','F','S'].map(d => `<div class="cal-day-name">${d}</div>`).join('')}
         ${cells}
       </div>
     </div>
@@ -628,7 +629,7 @@ export function tradeFormHtml(trade = null, defaultDate = null) {
       <div class="form-row cols-2">
         <div class="form-group">
           <label for="trade-date">Date *</label>
-          <input type="date" id="trade-date" value="${t.date || defaultDate || todayISO()}" max="${todayISO()}" required />
+          ${dateInputHtml('trade-date', t.date || defaultDate || todayISO(), `max="${todayISO()}" required`)}
         </div>
         <div class="form-group">
           <label for="trade-time">Time</label>

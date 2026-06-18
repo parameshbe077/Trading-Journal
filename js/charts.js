@@ -9,12 +9,21 @@ function chartDefaults() {
   return {
     responsive: true,
     maintainAspectRatio: false,
+    layout: {
+      padding: { top: 8, right: 12, bottom: 4, left: 4 },
+    },
     plugins: {
       legend: { labels: { color: c.textSecondary, font: { family: 'DM Sans' } } },
     },
     scales: {
-      x: { ticks: { color: c.textMuted }, grid: { color: c.grid } },
-      y: { ticks: { color: c.textMuted }, grid: { color: c.grid } },
+      x: {
+        ticks: { color: c.textMuted, maxRotation: 0, autoSkip: true },
+        grid: { color: c.grid },
+      },
+      y: {
+        ticks: { color: c.textMuted, padding: 6 },
+        grid: { color: c.grid },
+      },
     },
   };
 }
@@ -105,6 +114,7 @@ export function renderSetupChart(canvas, setups) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      layout: { padding: { top: 8, right: 8, bottom: 4, left: 4 } },
       plugins: {
         legend: {
           position: 'bottom',
@@ -131,6 +141,7 @@ export function renderWinLossChart(canvas, stats) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      layout: { padding: { top: 8, right: 8, bottom: 4, left: 4 } },
       plugins: {
         legend: {
           position: 'bottom',

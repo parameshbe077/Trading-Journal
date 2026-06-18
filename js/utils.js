@@ -49,6 +49,27 @@ export function escapeHtml(str) {
   return div.innerHTML;
 }
 
+export function dateInputHtml(id, value = '', extraAttrs = '') {
+  return `
+    <div class="date-input-wrap">
+      <input type="date" id="${id}" class="date-input" value="${value}" ${extraAttrs} />
+      <span class="date-input-ph" aria-hidden="true">dd-mm-yyyy</span>
+    </div>
+  `;
+}
+
+export function initDateInputs(root) {
+  root.querySelectorAll('.date-input').forEach(el => {
+    const sync = () => el.classList.toggle('has-value', !!el.value);
+    if (!el.dataset.dateInit) {
+      el.dataset.dateInit = '1';
+      el.addEventListener('change', sync);
+      el.addEventListener('input', sync);
+    }
+    sync();
+  });
+}
+
 export const MOODS = [
   { id: 'confident', label: '😎 Confident' },
   { id: 'calm', label: '😌 Calm' },
