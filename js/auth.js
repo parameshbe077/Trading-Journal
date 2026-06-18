@@ -34,15 +34,24 @@ export async function signOutUser() {
   return signOut(auth);
 }
 
-export function authErrorMessage(err) {
+export function authErrorMessage(err, mode = 'signin') {
   const code = err?.code ?? '';
+  if (mode === 'signin') {
+    const signInMap = {
+      'auth/invalid-email': 'Invalid email address.',
+      'auth/user-disabled': 'This account has been disabled.',
+      'auth/user-not-found': 'No account found with this email. Please sign up first.',
+      'auth/wrong-password': 'Incorrect password. Please try again.',
+      'auth/invalid-credential': 'No account found or incorrect password. New here? Please sign up first.',
+      'auth/too-many-requests': 'Too many attempts. Try again later.',
+    };
+    if (signInMap[code]) return signInMap[code];
+  }
+
   const map = {
     'auth/invalid-email': 'Invalid email address.',
     'auth/user-disabled': 'This account has been disabled.',
-    'auth/user-not-found': 'No account found with this email.',
-    'auth/wrong-password': 'Incorrect password.',
-    'auth/invalid-credential': 'Invalid email or password.',
-    'auth/email-already-in-use': 'An account already exists with this email.',
+    'auth/email-already-in-use': 'An account already exists with this email. Please sign in instead.',
     'auth/weak-password': 'Password must be at least 6 characters.',
     'auth/popup-closed-by-user': 'Sign-in popup was closed.',
     'auth/too-many-requests': 'Too many attempts. Try again later.',
@@ -75,7 +84,19 @@ export function authScreenHtml() {
         </div>
         <div class="form-group">
           <label for="auth-password">Password</label>
-          <input type="password" id="auth-password" autocomplete="current-password" required minlength="6" placeholder="Min. 6 characters" />
+          <div class="password-field">
+            <input type="password" id="auth-password" autocomplete="current-password" required minlength="6" placeholder="Min. 6 characters" />
+            <button type="button" class="password-toggle" id="auth-password-toggle" aria-label="Show password">
+              <svg class="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+              <svg class="icon-eye-off hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                <path d="M1 1l22 22"/><path d="M14.12 14.12a3 3 0 0 1-4.24-4.24"/>
+              </svg>
+            </button>
+          </div>
         </div>
         <p id="auth-error" class="auth-error hidden" role="alert"></p>
         <button type="submit" class="btn btn-primary auth-submit" id="auth-submit">Sign In</button>
@@ -96,6 +117,7 @@ export function bindAuthScreen(root, { onError } = {}) {
   const form = root.querySelector('#auth-form');
   const emailInput = root.querySelector('#auth-email');
   const passwordInput = root.querySelector('#auth-password');
+  const passwordToggle = root.querySelector('#auth-password-toggle');
   const submitBtn = root.querySelector('#auth-submit');
   const errorEl = root.querySelector('#auth-error');
   const googleBtn = root.querySelector('#auth-google');
@@ -125,6 +147,14 @@ export function bindAuthScreen(root, { onError } = {}) {
     tab.addEventListener('click', () => setMode(tab.dataset.authTab));
   });
 
+  passwordToggle?.addEventListener('click', () => {
+    const show = passwordInput.type === 'password';
+    passwordInput.type = show ? 'text' : 'password';
+    passwordToggle.querySelector('.icon-eye')?.classList.toggle('hidden', show);
+    passwordToggle.querySelector('.icon-eye-off')?.classList.toggle('hidden', !show);
+    passwordToggle.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+  });
+
   const runAuth = async fn => {
     showError('');
     submitBtn.disabled = true;
@@ -132,7 +162,10 @@ export function bindAuthScreen(root, { onError } = {}) {
     try {
       await fn();
     } catch (err) {
-      showError(authErrorMessage(err));
+      showError(authErrorMessage(err, mode));
+      if (mode === 'signin' && err?.code === 'auth/user-not-found') {
+        setMode('signup');
+      }
     } finally {
       submitBtn.disabled = false;
       googleBtn.disabled = false;
