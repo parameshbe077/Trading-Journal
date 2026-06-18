@@ -239,7 +239,7 @@ function renderTrades(state, filters = {}) {
     <div class="filters card" style="padding:14px">
       <input type="date" id="filter-from" value="${filters.from || ''}" placeholder="From" />
       <input type="date" id="filter-to" value="${filters.to || ''}" placeholder="To" />
-      <input type="text" id="filter-symbol" value="${escapeHtml(filters.symbol || '')}" placeholder="Symbol" />
+      <input type="text" id="filter-symbol" value="${escapeHtml(filters.symbol || '')}" placeholder="Eg: Nifty" />
       <select id="filter-setup">
         <option value="">All setups</option>
         ${SETUPS.map(s => `<option value="${s}" ${filters.setup === s ? 'selected' : ''}>${s}</option>`).join('')}
@@ -564,12 +564,12 @@ function renderSettings(state, user = null) {
           </div>
           <div class="form-group">
             <label for="max-trades">Max Trades / Day</label>
-            <input type="number" id="max-trades" value="${s.maxTradesPerDay}" min="1" max="50" />
+            <input type="number" id="max-trades" value="${s.maxTradesPerDay}" min="0" max="50" />
           </div>
         </div>
         <div class="form-group">
           <label for="risk-pct">Default Risk Per Trade (%)</label>
-          <input type="number" id="risk-pct" value="${s.riskPerTradePct}" min="0.1" max="10" step="0.1" />
+          <input type="number" id="risk-pct" value="${s.riskPerTradePct}" min="0" max="10" step="0.1" />
         </div>
         <button type="submit" class="btn btn-primary">Save Settings</button>
       </form>
@@ -684,7 +684,7 @@ export function tradeFormHtml(trade = null, defaultDate = null) {
           <input type="number" id="trade-fees" value="${t.fees ?? 0}" min="0" step="any" />
         </div>
         <div class="form-group">
-          <label for="trade-risk">Risk Amount ($)</label>
+          <label for="trade-risk">Risk Amount</label>
           <input type="number" id="trade-risk" value="${t.riskAmount ?? ''}" min="0" step="any" placeholder="For R-multiple" />
         </div>
       </div>

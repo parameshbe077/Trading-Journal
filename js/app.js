@@ -403,11 +403,11 @@ class App {
     const form = this.els.content.querySelector('#settings-form');
     this.state.settings = {
       accountSize: parseFloat(form.querySelector('#account-size').value) || 0,
-      currencySymbol: form.querySelector('#currency-symbol').value || '$',
+      currencySymbol: form.querySelector('#currency-symbol').value || '₹',
       dailyLossLimit: parseFloat(form.querySelector('#daily-loss-limit').value) || 0,
       dailyProfitTarget: parseFloat(form.querySelector('#daily-profit-target').value) || 0,
-      maxTradesPerDay: parseInt(form.querySelector('#max-trades').value) || 3,
-      riskPerTradePct: parseFloat(form.querySelector('#risk-pct').value) || 1,
+      maxTradesPerDay: parseInt(form.querySelector('#max-trades').value) || 0,
+      riskPerTradePct: parseFloat(form.querySelector('#risk-pct').value) || 0,
     };
     this.persist();
     this.toast('Settings saved');

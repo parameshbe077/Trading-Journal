@@ -7,7 +7,7 @@ export function todayISO() {
 }
 
 export function formatCurrency(n, settings = {}) {
-  const sym = settings.currencySymbol ?? '$';
+  const sym = settings.currencySymbol ?? '₹';
   const sign = n >= 0 ? '' : '-';
   return `${sign}${sym}${Math.abs(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
@@ -76,12 +76,12 @@ export const DEFAULT_RULES = [
 
 export function defaultSettings() {
   return {
-    accountSize: 25000,
-    currencySymbol: '$',
-    dailyLossLimit: 500,
-    dailyProfitTarget: 1000,
-    maxTradesPerDay: 3,
-    riskPerTradePct: 1,
+    accountSize: 0,
+    currencySymbol: '₹',
+    dailyLossLimit: 0,
+    dailyProfitTarget: 0,
+    maxTradesPerDay: 0,
+    riskPerTradePct: 0,
   };
 }
 
@@ -108,8 +108,8 @@ export function calcRMultiple(trade, settings) {
   const pnl = calcTradePnl(trade);
   const risk = parseNum(trade.riskAmount);
   if (risk > 0) return pnl / risk;
-  const account = settings?.accountSize ?? 25000;
-  const riskPct = settings?.riskPerTradePct ?? 1;
+  const account = settings?.accountSize ?? 0;
+  const riskPct = settings?.riskPerTradePct ?? 0;
   const impliedRisk = account * (riskPct / 100);
   return impliedRisk > 0 ? pnl / impliedRisk : 0;
 }
