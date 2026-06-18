@@ -1111,6 +1111,16 @@ tr:hover td { background: rgba(128, 128, 128, 0.06); }
 
 @media (max-width: 1023px) {
   .sidebar-footer { display: none; }
+  .sidebar.open .sidebar-footer { display: flex; }
+}
+
+.sidebar-logout {
+  margin-top: 4px;
+  color: var(--text-muted);
+}
+
+.sidebar-logout:hover {
+  color: var(--loss);
 }
 
 /* Scrollbar */

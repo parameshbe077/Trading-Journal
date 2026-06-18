@@ -522,7 +522,6 @@ function renderSettings(state, user = null) {
     <div class="card section">
       <div class="card-header"><span class="card-title">Cloud Account</span></div>
       <p class="text-muted mb-16" style="font-size:0.875rem">Signed in as <strong>${email}</strong>. Your journal syncs to Firebase automatically.</p>
-      <button type="button" class="btn btn-secondary" id="btn-sign-out">Sign Out</button>
     </div>
 
     <div class="card section">

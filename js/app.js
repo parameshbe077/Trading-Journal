@@ -117,6 +117,7 @@ class App {
       this.toast('Backup exported');
     });
     document.getElementById('import-file').addEventListener('change', e => this.handleImport(e.target));
+    document.getElementById('btn-sign-out').addEventListener('click', () => this.handleSignOut());
 
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape') this.closeModal();
@@ -245,7 +246,6 @@ class App {
     });
     content.querySelector('#import-settings')?.addEventListener('change', e => this.handleImport(e.target));
     content.querySelector('#btn-clear-data')?.addEventListener('click', () => this.clearData());
-    content.querySelector('#btn-sign-out')?.addEventListener('click', () => this.handleSignOut());
   }
 
   updateRulesScore() {
