@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Professional trading journal — track trades, P&L, rules compliance, and daily performance." />
+  <meta name="theme-color" content="#0a0e14" />
+  <title>TradeVault — Trading Journal</title>
+  <script>
+    (function () {
+      var ids = ['midnight','ocean','aurora','ember','forest','slate','royal','pearl','dawn'];
+      var colors = { midnight:'#0a0e14', ocean:'#061218', aurora:'#0a0814', ember:'#100808', forest:'#060f0a', slate:'#0c0e12', royal:'#080818', pearl:'#f0edf6', dawn:'#faf5ee' };
+      try {
+        var p = localStorage.getItem('tradevault_palette');
+        if (!p || ids.indexOf(p) < 0) {
+          var legacy = localStorage.getItem('tradevault_theme');
+          p = legacy === 'light' ? 'pearl' : legacy === 'dark' ? 'midnight' : 'midnight';
+        }
+        document.documentElement.setAttribute('data-palette', p);
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta && colors[p]) meta.content = colors[p];
+      } catch (e) {
+        document.documentElement.setAttribute('data-palette', 'midnight');
+      }
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css?v=4" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+</head>
+<body>
+  <div id="auth-screen" class="auth-screen">
+    <div id="auth-loading" class="auth-loading hidden">
+      <div class="auth-spinner"></div>
+      <p>Loading…</p>
+    </div>
+    <div id="auth-content"></div>
+  </div>
+
+  <div id="app" class="hidden">
+    <!-- Sidebar (desktop) -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 4 6-10"/></svg>
+        </div>
+        <div>
+          <span class="brand-name">TradeVault</span>
+          <span class="brand-tag">Trading Journal</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav" id="desktop-nav"></nav>
+      <div class="sidebar-footer">
+        <button type="button" class="btn btn-ghost btn-sm" id="btn-export">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export
+        </button>
+        <label class="btn btn-ghost btn-sm import-label">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Import
+          <input type="file" id="import-file" accept=".json" hidden />
+        </label>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="main">
+      <header class="topbar">
+        <button type="button" class="btn-icon mobile-menu" id="btn-menu" aria-label="Open menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <h1 class="page-title" id="page-title">Dashboard</h1>
+        <div class="topbar-actions">
+          <div class="palette-picker" id="palette-picker">
+            <button type="button" class="btn-palette" id="btn-palette" aria-label="Choose color palette" aria-haspopup="true">
+              <span class="palette-swatch" id="palette-swatch-current"></span>
+            </button>
+            <div class="palette-menu" id="palette-menu"></div>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" id="btn-quick-trade">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span class="hide-mobile">New Trade</span>
+          </button>
+        </div>
+      </header>
+
+      <div class="content" id="content"></div>
+    </main>
+
+    <!-- Mobile bottom nav -->
+    <nav class="bottom-nav" id="bottom-nav"></nav>
+
+    <!-- Mobile sidebar overlay -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  </div>
+
+  <!-- Modal container -->
+  <div class="modal-backdrop" id="modal-backdrop" aria-hidden="true">
+    <div class="modal" id="modal" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-title"></h2>
+        <button type="button" class="btn-icon" id="modal-close" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+      <div class="modal-footer" id="modal-footer"></div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="js/theme-init.js"></script>
+  <script type="module" src="js/app.js?v=4"></script>
+</body>
+</html>
