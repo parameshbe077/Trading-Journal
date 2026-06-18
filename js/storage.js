@@ -8,13 +8,18 @@ const CACHE_PREFIX = 'tradevault_journal_';
 let currentUserId = null;
 let saveTimer = null;
 let pendingSave = null;
+let onSaveError = null;
 
 function cacheKey(uid) {
   return `${CACHE_PREFIX}${uid}`;
 }
 
 function journalRef(uid) {
-  return doc(db, 'users', uid, 'journal', 'data');
+  return doc(db, 'journals', uid);
+}
+
+export function setSaveErrorHandler(fn) {
+  onSaveError = fn;
 }
 
 export function setStorageUser(uid) {
@@ -31,6 +36,17 @@ export function clearStorageUser() {
   clearTimeout(saveTimer);
   saveTimer = null;
   pendingSave = null;
+}
+
+function firestoreErrorMessage(err) {
+  const code = err?.code ?? '';
+  if (code === 'permission-denied') {
+    return 'Firestore blocked the save. Enable Auth + deploy security rules in Firebase Console.';
+  }
+  if (code === 'unavailable') {
+    return 'Firestore is offline. Check your internet connection.';
+  }
+  return err?.message ?? 'Could not save to cloud.';
 }
 
 function readLocalCache(uid) {
@@ -70,10 +86,10 @@ export async function loadState(uid) {
       return state;
     }
   } catch (err) {
-    console.warn('Firestore load failed, using local cache:', err);
+    console.error('Firestore load failed:', err);
     const cached = readLocalCache(uid);
     if (cached) return cached;
-    throw new Error('Could not load journal data. Check your connection.');
+    throw new Error(firestoreErrorMessage(err));
   }
 
   const legacy = readLegacyLocal();
@@ -103,16 +119,24 @@ export function saveState(state) {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
     const toSave = pendingSave;
+    const uid = currentUserId;
     pendingSave = null;
-    if (toSave && currentUserId) flushSave(currentUserId, toSave);
+    if (toSave && uid) flushSave(uid, toSave);
   }, 600);
 }
 
 async function flushSave(uid, state) {
-  await setDoc(journalRef(uid), {
-    ...state,
-    updatedAt: new Date().toISOString(),
-  });
+  try {
+    await setDoc(journalRef(uid), {
+      ...state,
+      updatedAt: new Date().toISOString(),
+    });
+    console.info('Saved to Firestore: journals/', uid);
+  } catch (err) {
+    console.error('Firestore save failed:', err);
+    onSaveError?.(firestoreErrorMessage(err));
+    throw err;
+  }
 }
 
 export async function clearState(uid) {

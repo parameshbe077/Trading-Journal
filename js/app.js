@@ -1,4 +1,4 @@
-import { loadState, saveState, exportData, importData, clearState, setStorageUser, clearStorageUser } from './storage.js';
+import { loadState, saveState, exportData, importData, clearState, setStorageUser, clearStorageUser, setSaveErrorHandler } from './storage.js';
 import { renderNav, renderPage, initChartsForPage, tradeFormHtml, parseTradeForm, NAV_ITEMS } from './views.js';
 import { uid, todayISO, defaultState } from './utils.js';
 import { setPalette } from './theme.js';
@@ -41,6 +41,7 @@ class App {
   start() {
     this.els.authContent.innerHTML = authScreenHtml();
     bindAuthScreen(this.els.authContent);
+    setSaveErrorHandler(msg => this.toast(msg, 'error'));
 
     watchAuth(async user => {
       if (!user) {
