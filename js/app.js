@@ -12,6 +12,11 @@ class App {
     this.booted = false;
     this.user = null;
 
+    const savedPage = sessionStorage.getItem('tradevault_page');
+    if (savedPage && NAV_ITEMS.some(n => n.id === savedPage)) {
+      this.page = savedPage;
+    }
+
     this.els = {
       app: document.getElementById('app'),
       authScreen: document.getElementById('auth-screen'),
@@ -38,6 +43,7 @@ class App {
   }
 
   start() {
+    this.showLoading('Loading…');
     this.els.authContent.innerHTML = authScreenHtml();
     bindAuthScreen(this.els.authContent);
     setSaveErrorHandler(msg => this.toast(msg, 'error'));
@@ -46,6 +52,7 @@ class App {
       if (!user) {
         this.user = null;
         clearStorageUser();
+        this.booted = false;
         this.showAuth();
         return;
       }
@@ -62,12 +69,8 @@ class App {
       }
 
       this.hideAuth();
-      if (!this.booted) {
-        this.booted = true;
-        this.navigate('dashboard');
-      } else {
-        this.navigate(this.page, this.ctx);
-      }
+      this.booted = true;
+      this.navigate(this.page, this.ctx);
     });
   }
 
@@ -126,6 +129,7 @@ class App {
 
   navigate(page, ctxPatch = {}) {
     this.page = page;
+    sessionStorage.setItem('tradevault_page', page);
     Object.assign(this.ctx, ctxPatch);
     this.toggleSidebar(false);
 
