@@ -100,7 +100,6 @@ export function defaultSettings() {
     accountSize: 0,
     currencySymbol: '₹',
     dailyLossLimit: 0,
-    dailyProfitTarget: 0,
     maxTradesPerDay: 0,
     riskPerTradePct: 0,
   };

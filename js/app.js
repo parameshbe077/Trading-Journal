@@ -1,7 +1,6 @@
 import { loadState, saveState, exportData, importData, clearState, setStorageUser, clearStorageUser, setSaveErrorHandler } from './storage.js';
 import { renderNav, renderPage, initChartsForPage, tradeFormHtml, parseTradeForm, NAV_ITEMS } from './views.js';
 import { uid, todayISO, defaultState, initDateInputs } from './utils.js';
-import { setPalette } from './theme.js';
 import { watchAuth, signOutUser, authScreenHtml, bindAuthScreen } from './auth.js';
 
 class App {
@@ -113,11 +112,6 @@ class App {
     });
 
     document.getElementById('btn-quick-trade').addEventListener('click', () => this.openTradeModal());
-    document.getElementById('btn-export').addEventListener('click', () => {
-      exportData(this.state);
-      this.toast('Backup exported');
-    });
-    document.getElementById('import-file').addEventListener('change', e => this.handleImport(e.target));
     document.getElementById('btn-sign-out').addEventListener('click', () => this.handleSignOut());
 
     document.addEventListener('keydown', e => {
@@ -237,9 +231,6 @@ class App {
     content.querySelector('#settings-form')?.addEventListener('submit', e => {
       e.preventDefault();
       this.saveSettings();
-    });
-    content.querySelectorAll('.palette-card').forEach(btn => {
-      btn.addEventListener('click', () => setPalette(btn.dataset.palette));
     });
     content.querySelector('#btn-export-settings')?.addEventListener('click', () => {
       exportData(this.state);
@@ -407,7 +398,6 @@ class App {
       accountSize: parseFloat(form.querySelector('#account-size').value) || 0,
       currencySymbol: form.querySelector('#currency-symbol').value || '₹',
       dailyLossLimit: parseFloat(form.querySelector('#daily-loss-limit').value) || 0,
-      dailyProfitTarget: parseFloat(form.querySelector('#daily-profit-target').value) || 0,
       maxTradesPerDay: parseInt(form.querySelector('#max-trades').value) || 0,
       riskPerTradePct: parseFloat(form.querySelector('#risk-pct').value) || 0,
     };

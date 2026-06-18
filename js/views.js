@@ -9,7 +9,6 @@ import {
   getTradesForDate, filterTrades, getAvailableBalance,
 } from './analytics.js';
 import { destroyCharts, renderEquityChart, renderDailyPnlChart, renderSetupChart, renderWinLossChart } from './charts.js';
-import { getPalettes, getPalette } from './theme.js';
 
 const ICONS = {
   dashboard: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>',
@@ -515,30 +514,12 @@ function renderRules(state) {
 
 function renderSettings(state, user = null) {
   const s = state.settings;
-  const current = getPalette();
-  const palettes = getPalettes();
   const email = user?.email ? escapeHtml(user.email) : '';
 
   return `
     <div class="card section">
       <div class="card-header"><span class="card-title">Cloud Account</span></div>
-      <p class="text-muted mb-16" style="font-size:0.875rem">Signed in as <strong>${email}</strong>. Your journal syncs to Firebase automatically.</p>
-    </div>
-
-    <div class="card section">
-      <div class="card-header"><span class="card-title">Color Palette</span></div>
-      <p class="text-muted mb-16" style="font-size:0.875rem">Choose a professional gradient theme for your journal.</p>
-      <div class="palette-grid">
-        ${palettes.map(p => `
-          <button type="button" class="palette-card${p.id === current ? ' active' : ''}" data-palette="${p.id}">
-            <div class="palette-card-preview" style="background:${p.swatch}"></div>
-            <div class="palette-card-body">
-              <div class="palette-card-name">${escapeHtml(p.label)}</div>
-              <div class="palette-card-desc">${escapeHtml(p.desc)}</div>
-            </div>
-          </button>
-        `).join('')}
-      </div>
+      <p class="text-muted mb-16" style="font-size:0.875rem">Signed in as <strong>${email}</strong></p>
     </div>
 
     <div class="card section">
@@ -554,14 +535,10 @@ function renderSettings(state, user = null) {
             <input type="text" id="currency-symbol" value="${escapeHtml(s.currencySymbol)}" maxlength="3" />
           </div>
         </div>
-        <div class="form-row cols-3">
+        <div class="form-row cols-2">
           <div class="form-group">
             <label for="daily-loss-limit">Daily Loss Limit</label>
             <input type="number" id="daily-loss-limit" value="${s.dailyLossLimit}" min="0" step="50" />
-          </div>
-          <div class="form-group">
-            <label for="daily-profit-target">Daily Profit Target</label>
-            <input type="number" id="daily-profit-target" value="${s.dailyProfitTarget}" min="0" step="50" />
           </div>
           <div class="form-group">
             <label for="max-trades">Max Trades / Day</label>
