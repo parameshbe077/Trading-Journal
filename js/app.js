@@ -1,7 +1,10 @@
 import { loadState, saveState, exportData, importData, clearState, setStorageUser, clearStorageUser, setSaveErrorHandler } from './storage.js';
 import { renderNav, renderPage, initChartsForPage, tradeFormHtml, parseTradeForm, NAV_ITEMS } from './views.js';
 import { uid, todayISO, defaultState, initDateInputs } from './utils.js';
-import { watchAuth, signOutUser, authScreenHtml, bindAuthScreen } from './auth.js';
+import {
+  watchAuth, signOutUser, authScreenHtml, verifyEmailScreenHtml, forgotPasswordHtml,
+  bindAuthScreen, bindVerifyScreen, bindForgotPasswordScreen, needsEmailVerification, getCurrentUser,
+} from './auth.js';
 
 class App {
   constructor() {
@@ -44,8 +47,7 @@ class App {
 
   start() {
     this.showLoading('Loading…');
-    this.els.authContent.innerHTML = authScreenHtml();
-    bindAuthScreen(this.els.authContent);
+    this.renderLoginScreen();
     setSaveErrorHandler(msg => this.toast(msg, 'error'));
 
     watchAuth(async user => {
@@ -57,20 +59,45 @@ class App {
         return;
       }
 
-      this.user = user;
-      setStorageUser(user.uid);
-      this.showLoading('Loading your journal…');
-
-      try {
-        this.state = await loadState(user.uid);
-      } catch (err) {
-        this.toast(err.message, 'error');
-        this.state = defaultState();
+      if (needsEmailVerification(user)) {
+        this.user = user;
+        this.showVerifyEmail(user.email);
+        return;
       }
 
-      this.hideAuth();
-      this.booted = true;
-      this.navigate(this.page, this.ctx);
+      await this.enterApp(user);
+    });
+  }
+
+  async enterApp(user) {
+    this.user = user;
+    setStorageUser(user.uid);
+    this.showLoading('Loading your journal…');
+
+    try {
+      this.state = await loadState(user.uid);
+    } catch (err) {
+      this.toast(err.message, 'error');
+      this.state = defaultState();
+    }
+
+    this.hideAuth();
+    this.booted = true;
+    this.navigate(this.page, this.ctx);
+  }
+
+  showVerifyEmail(email) {
+    clearStorageUser();
+    this.els.authScreen.classList.remove('hidden');
+    this.els.app.classList.add('hidden');
+    this.els.authLoading.classList.add('hidden');
+    this.els.authContent.classList.remove('hidden');
+    this.els.authContent.innerHTML = verifyEmailScreenHtml(email);
+    bindVerifyScreen(this.els.authContent, {
+      onVerified: () => this.enterApp(getCurrentUser()),
+      onSignOut: () => this.handleSignOut(),
+      onSuccess: msg => this.toast(msg),
+      onError: msg => this.toast(msg, 'error'),
     });
   }
 
@@ -79,6 +106,26 @@ class App {
     this.els.app.classList.add('hidden');
     this.els.authLoading.classList.add('hidden');
     this.els.authContent.classList.remove('hidden');
+    this.renderLoginScreen();
+  }
+
+  renderLoginScreen() {
+    this.els.authContent.innerHTML = authScreenHtml();
+    bindAuthScreen(this.els.authContent, {
+      onSignUpSuccess: () => this.toast('Verification email sent. Check your inbox.'),
+      onForgotPassword: email => this.showForgotPassword(email),
+    });
+  }
+
+  showForgotPassword(prefillEmail = '') {
+    this.els.authContent.innerHTML = forgotPasswordHtml();
+    const emailInput = this.els.authContent.querySelector('#forgot-email');
+    if (prefillEmail && emailInput) emailInput.value = prefillEmail;
+    bindForgotPasswordScreen(this.els.authContent, {
+      onBack: () => this.renderLoginScreen(),
+      onSuccess: msg => this.toast(msg),
+      onError: msg => this.toast(msg, 'error'),
+    });
   }
 
   showLoading(msg) {

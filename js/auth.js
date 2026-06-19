@@ -2,6 +2,8 @@ import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
   onAuthStateChanged,
+  sendEmailVerification,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
@@ -18,12 +20,39 @@ export function getCurrentUser() {
   return auth.currentUser;
 }
 
+export function needsEmailVerification(user) {
+  if (!user?.email) return false;
+  if (user.emailVerified) return false;
+  return user.providerData.some(p => p.providerId === 'password');
+}
+
 export async function signInEmail(email, password) {
-  return signInWithEmailAndPassword(auth, email.trim(), password);
+  const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
+  await cred.user.reload();
+  return auth.currentUser;
 }
 
 export async function signUpEmail(email, password) {
-  return createUserWithEmailAndPassword(auth, email.trim(), password);
+  const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+  await sendEmailVerification(cred.user);
+  return cred.user;
+}
+
+export async function resendVerificationEmail() {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Not signed in.');
+  await sendEmailVerification(user);
+}
+
+export async function refreshAuthUser() {
+  const user = auth.currentUser;
+  if (!user) return null;
+  await user.reload();
+  return auth.currentUser;
+}
+
+export async function sendPasswordReset(email) {
+  await sendPasswordResetEmail(auth, email.trim());
 }
 
 export async function signInGoogle() {
@@ -82,8 +111,11 @@ export function authScreenHtml() {
           <label for="auth-email">Email</label>
           <input type="email" id="auth-email" autocomplete="email" required placeholder="you@example.com" />
         </div>
-        <div class="form-group">
-          <label for="auth-password">Password</label>
+        <div class="form-group auth-password-group">
+          <div class="auth-password-label-row">
+            <label for="auth-password">Password</label>
+            <button type="button" class="auth-forgot-link" id="auth-forgot-link">Forgot password?</button>
+          </div>
           <div class="password-field">
             <input type="password" id="auth-password" autocomplete="current-password" required minlength="6" placeholder="Min. 6 characters" />
             <button type="button" class="password-toggle" id="auth-password-toggle" aria-label="Show password">
@@ -112,11 +144,71 @@ export function authScreenHtml() {
   `;
 }
 
-export function bindAuthScreen(root, { onError } = {}) {
+export function forgotPasswordHtml() {
+  return `
+    <div class="auth-card">
+      <div class="auth-brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+        </div>
+        <div>
+          <h1 class="auth-title">Reset password</h1>
+          <p class="auth-subtitle">We'll email you a link to choose a new password</p>
+        </div>
+      </div>
+
+      <form id="forgot-form" class="auth-form">
+        <div class="form-group">
+          <label for="forgot-email">Email</label>
+          <input type="email" id="forgot-email" autocomplete="email" required placeholder="you@example.com" />
+        </div>
+        <p id="forgot-error" class="auth-error hidden" role="alert"></p>
+        <p id="forgot-success" class="auth-success hidden" role="status"></p>
+        <button type="submit" class="btn btn-primary auth-submit" id="forgot-submit">Send reset link</button>
+      </form>
+
+      <button type="button" class="btn btn-ghost auth-back-link" id="forgot-back">← Back to sign in</button>
+    </div>
+  `;
+}
+
+export function verifyEmailScreenHtml(email) {
+  const safe = String(email)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+  return `
+    <div class="auth-card">
+      <div class="auth-brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        </div>
+        <div>
+          <h1 class="auth-title">Verify your email</h1>
+          <p class="auth-subtitle">We sent a link to <strong>${safe}</strong></p>
+        </div>
+      </div>
+
+      <p class="auth-verify-text">Open the email and click the verification link. Check your spam folder if you don't see it.</p>
+      <p id="verify-error" class="auth-error hidden" role="alert"></p>
+      <p id="verify-success" class="auth-success hidden" role="status"></p>
+
+      <div class="auth-verify-actions">
+        <button type="button" class="btn btn-primary" id="btn-verify-check">I've verified my email</button>
+        <button type="button" class="btn btn-secondary" id="btn-verify-resend">Resend email</button>
+        <button type="button" class="btn btn-ghost" id="btn-verify-signout">Sign out</button>
+      </div>
+    </div>
+  `;
+}
+
+export function bindAuthScreen(root, { onError, onSignUpSuccess, onForgotPassword } = {}) {
   let mode = 'signin';
   const form = root.querySelector('#auth-form');
   const emailInput = root.querySelector('#auth-email');
   const passwordInput = root.querySelector('#auth-password');
+  const forgotLink = root.querySelector('#auth-forgot-link');
   const passwordToggle = root.querySelector('#auth-password-toggle');
   const submitBtn = root.querySelector('#auth-submit');
   const errorEl = root.querySelector('#auth-error');
@@ -140,11 +232,18 @@ export function bindAuthScreen(root, { onError } = {}) {
     });
     submitBtn.textContent = mode === 'signin' ? 'Sign In' : 'Create Account';
     passwordInput.autocomplete = mode === 'signin' ? 'current-password' : 'new-password';
+    passwordInput.required = true;
+    forgotLink?.classList.toggle('hidden', mode !== 'signin');
     showError('');
   };
 
   root.querySelectorAll('.auth-tab').forEach(tab => {
     tab.addEventListener('click', () => setMode(tab.dataset.authTab));
+  });
+
+  forgotLink?.addEventListener('click', () => {
+    const email = emailInput.value.trim();
+    onForgotPassword?.(email);
   });
 
   passwordToggle?.addEventListener('click', () => {
@@ -160,7 +259,8 @@ export function bindAuthScreen(root, { onError } = {}) {
     submitBtn.disabled = true;
     googleBtn.disabled = true;
     try {
-      await fn();
+      const result = await fn();
+      if (mode === 'signup') onSignUpSuccess?.();
     } catch (err) {
       showError(authErrorMessage(err, mode));
       if (mode === 'signin' && err?.code === 'auth/user-not-found') {
@@ -180,4 +280,106 @@ export function bindAuthScreen(root, { onError } = {}) {
   });
 
   googleBtn.addEventListener('click', () => runAuth(() => signInGoogle()));
+}
+
+export function bindForgotPasswordScreen(root, { onBack, onSuccess, onError } = {}) {
+  const form = root.querySelector('#forgot-form');
+  const emailInput = root.querySelector('#forgot-email');
+  const submitBtn = root.querySelector('#forgot-submit');
+  const backBtn = root.querySelector('#forgot-back');
+  const errorEl = root.querySelector('#forgot-error');
+  const successEl = root.querySelector('#forgot-success');
+
+  const showError = msg => {
+    errorEl.textContent = msg;
+    errorEl.classList.toggle('hidden', !msg);
+    successEl.classList.add('hidden');
+    if (msg) onError?.(msg);
+  };
+
+  const showSuccess = msg => {
+    successEl.textContent = msg;
+    successEl.classList.remove('hidden');
+    errorEl.classList.add('hidden');
+    onSuccess?.(msg);
+  };
+
+  backBtn.addEventListener('click', () => onBack?.());
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const email = emailInput.value.trim();
+    if (!email) {
+      showError('Please enter your email address.');
+      return;
+    }
+    submitBtn.disabled = true;
+    showError('');
+    try {
+      await sendPasswordReset(email);
+      showSuccess('If an account exists for this email, a reset link has been sent. Check your inbox and spam folder.');
+      submitBtn.disabled = true;
+    } catch (err) {
+      showError(authErrorMessage(err));
+      submitBtn.disabled = false;
+    }
+  });
+}
+
+export function bindVerifyScreen(root, { onVerified, onSignOut, onError, onSuccess } = {}) {
+  const errorEl = root.querySelector('#verify-error');
+  const successEl = root.querySelector('#verify-success');
+  const checkBtn = root.querySelector('#btn-verify-check');
+  const resendBtn = root.querySelector('#btn-verify-resend');
+  const signoutBtn = root.querySelector('#btn-verify-signout');
+
+  const showError = msg => {
+    errorEl.textContent = msg;
+    errorEl.classList.toggle('hidden', !msg);
+    successEl.classList.add('hidden');
+    if (msg) onError?.(msg);
+  };
+
+  const showSuccess = msg => {
+    successEl.textContent = msg;
+    successEl.classList.remove('hidden');
+    errorEl.classList.add('hidden');
+    onSuccess?.(msg);
+  };
+
+  checkBtn.addEventListener('click', async () => {
+    checkBtn.disabled = true;
+    resendBtn.disabled = true;
+    showError('');
+    try {
+      const user = await refreshAuthUser();
+      if (user?.emailVerified) {
+        onVerified?.();
+      } else {
+        showError('Email not verified yet. Click the link in your inbox, then try again.');
+      }
+    } catch (err) {
+      showError(err.message ?? 'Could not check verification status.');
+    } finally {
+      checkBtn.disabled = false;
+      resendBtn.disabled = false;
+    }
+  });
+
+  resendBtn.addEventListener('click', async () => {
+    resendBtn.disabled = true;
+    checkBtn.disabled = true;
+    showError('');
+    try {
+      await resendVerificationEmail();
+      showSuccess('Verification email sent. Check your inbox.');
+    } catch (err) {
+      showError(authErrorMessage(err));
+    } finally {
+      resendBtn.disabled = false;
+      checkBtn.disabled = false;
+    }
+  });
+
+  signoutBtn.addEventListener('click', () => onSignOut?.());
 }

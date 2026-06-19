@@ -1375,6 +1375,41 @@ tr:hover td { background: rgba(128, 128, 128, 0.06); }
   margin-top: 4px;
 }
 
+.auth-password-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.auth-password-label-row label {
+  margin-bottom: 0;
+}
+
+.auth-forgot-link {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 0.8125rem;
+  color: var(--accent);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.auth-forgot-link:hover {
+  text-decoration: underline;
+}
+
+.auth-forgot-link.hidden {
+  display: none;
+}
+
+.auth-back-link {
+  width: 100%;
+  margin-top: 16px;
+}
+
 .password-field {
   position: relative;
 }
@@ -1417,6 +1452,30 @@ tr:hover td { background: rgba(128, 128, 128, 0.06); }
   font-size: 0.8125rem;
   color: var(--loss);
   margin: 0 0 12px;
+}
+
+.auth-success {
+  font-size: 0.8125rem;
+  color: var(--profit);
+  margin: 0 0 12px;
+}
+
+.auth-verify-text {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.auth-verify-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.auth-verify-actions .btn-primary,
+.auth-verify-actions .btn-secondary {
+  width: 100%;
 }
 
 .auth-divider {
